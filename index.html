@@ -1,0 +1,137 @@
+<Style>
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  #map {
+    height: 700px;
+  }
+
+  #locate-position {
+    position: absolute;
+    top: 140px;
+    left: 25px;
+    -webkit-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
+    box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
+  }
+</Style>
+
+<link rel="stylesheet" id="c-css"
+  href="https://cdnjs.cloudflare.com/ajax/libs/uikit/2.22.0/css/uikit.almost-flat.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+
+
+        <div id="map"></div>
+        <button id="locate-position" class="uk-button uk-button-success">
+          <i class="uk-icon-map-marker"></i>
+        </button>
+ 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/2.22.0/js/uikit.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+
+<script>
+  $(document).ready(function () {
+    function toRadian(degree) {
+      return (degree * Math.PI) / 180;
+    }
+
+    function getDistance(origin, destination) {
+      // return distance in meters
+      var lon1 = toRadian(origin[1]),
+        lat1 = toRadian(origin[0]),
+        lon2 = toRadian(destination[1]),
+        lat2 = toRadian(destination[0]);
+
+      var deltaLat = lat2 - lat1;
+      var deltaLon = lon2 - lon1;
+
+      var a =
+        Math.pow(Math.sin(deltaLat / 2), 2) +
+        Math.cos(lat1) * Math.cos(lat2) * Math.pow(Math.sin(deltaLon / 2), 2);
+      var c = 2 * Math.asin(Math.sqrt(a));
+      var EARTH_RADIUS = 6371;
+      return c * EARTH_RADIUS * 1000;
+    }
+
+    var map = L.map("map", {
+      center: [
+        [52.169, 22.2778]
+      ],
+      scrollWheelZoom: true,
+      inertia: true,
+      inertiaDeceleration: 2000
+    });
+    map.setView([52.169, 22.2778], 15);
+
+    L.tileLayer(
+      "https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+        attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://mapbox.com">Mapbox</a>',
+        // maxZoom: 15,
+        id: "superpikar.n28afi10",
+        accessToken: "pk.eyJ1Ijoic3VwZXJwaWthciIsImEiOiI0MGE3NGQ2OWNkMzkyMzFlMzE4OWU5Yjk0ZmYzMGMwOCJ9.3bGFHjoSXB8yVA3KeQoOIw"
+      }
+    ).addTo(map);
+
+    $("#locate-position").on("click", function () {
+      map.locate({
+        setView: true,
+        maxZoom: 15
+      });
+    });
+
+    function onLocationFound(e) {
+      var myLocalizer = [];
+
+      console.log(e.latlng);
+      myLocalizer = [e.latlng.lat, e.latlng.lng];
+
+      console.log(myLocalizer);
+
+      var local;
+      var near = 15;
+      var myColor;
+
+      for (var i = -0.002; i < 0.002; i += 0.0002) {
+        var local = [52.189 + i * 2 * -53, 22.2597 - i * 53 - Math.pow(i, 3)];
+
+        var km = getDistance(myLocalizer, local) / 1000;
+
+        var popup = L.popup()
+          .setLatLng(local)
+          .setContent(local[0] + " | " + local[1] + " km: " + km)
+          .addTo(map);
+
+        myColor = "blue";
+        if (km <= near) {
+          myColor = "red";
+        }
+
+        var polygon = L.polygon([local, myLocalizer], {
+          color: myColor
+        }).addTo(
+          map
+        );
+      }
+
+      var radius = 1000 * near; //e.accuracy * 10 * 8;
+      L.circle(e.latlng, radius).addTo(map);
+    }
+
+    map.locate({
+      setView: true,
+      maxZoom: 15
+    });
+
+    map.on("locationfound", onLocationFound);
+
+    function onLocationError(e) {
+      alert(e.message);
+    }
+
+    map.on("locationerror", onLocationError);
+  });
+</script>
