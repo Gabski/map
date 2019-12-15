@@ -1,51 +1,50 @@
 <?php
-if ($_GET['bus']) {
 
+include 'functions.php';
+include 'Json.php';
 
-    include 'Json.php';
-    $api = "7fbfbb5f-96df-4555-b1c7-31d0994ab09f";
-    $bus = $_GET['bus'];
-   
+$bus = $_GET['bus'];
 
-    $url = sprintf("https://api.um.warszawa.pl/api/action/busestrams_get/?resource_id=f2e5503e-927d-4ad3-9500-4ab9e55deb59&apikey=%s&type=1&line=%s",
-        $api, $bus);
+if ($bus) {
 
-    $opts = array('http' => array('header' => "User-Agent: GeoAddressScript 3.7.6\r\n"));
-    $context = stream_context_create($opts);
-    $response = file_get_contents($url, false, $context);
-
-
-    $newData = json_decode($response, true);
-
+    $busData = api_response($bus);
 
     $busDB = new Json($bus . '.json');
     $arr = $busDB->read();
 
-    $arr = [];
+    //$arr = [];
 
+    foreach ($busData['result'] as $bus) {
+        $arr[$bus['Brigade']][] = $bus;
+        foreach ($arr[$bus['Brigade']] as $k => $v) {
 
-    foreach($newData['result']  as $bus){
-        
-        $arr[$bus['Brigade']][]  = $bus;
-        
-        // if(count($arr[$bus['Brigade']]) > 2){
-        //     $k = array_key_first ($arr[$bus['Brigade']]);
+            $time = strtotime($v['Time']);
+            $delay = time() - $time;
+
+            if ($delay > 540) {
+                unset($arr[$bus['Brigade']][$k]);
+            }
+
+            if (count($arr[$bus['Brigade']]) > 4) {
+                $arr[$bus['Brigade']] = array_splice($arr[$bus['Brigade']], count($arr[$bus['Brigade']]) - 4, 4);
+            }
+        }
+
+        // if (count($arr[$bus['Brigade']]) > 2) {
+
+        //     $k = array_key_first($arr[$bus['Brigade']]);
         //     unset($arr[$bus['Brigade']][$k]);
         // }
-        
- 
+
     }
+
+    $arr = array_filter($arr);
 
     $busDB->save($arr);
 
-
-   header('Content-Type: application/json');
-  echo json_encode(['result' => $arr]);
- 
-
-
-die;
-
+    header('Content-Type: application/json');
+    echo json_encode(['result' => $arr ?? []]);
+    die;
 }
 ?>
 
@@ -79,6 +78,16 @@ body {
     border-radius: 50%;
 }
 
+.bus-node {
+    display: block;
+    width: 8px !important;
+    height: 8px !important;
+    ;
+    background: green;
+    position: relative;
+    border-radius: 50%;
+
+}
 
 .bus:after {
     content: '';
