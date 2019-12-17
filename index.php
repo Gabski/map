@@ -16,27 +16,28 @@ if ($bus) {
 
     foreach ($busData['result'] as $bus) {
         $arr[$bus['Brigade']][] = $bus;
-        foreach ($arr[$bus['Brigade']] as $k => $v) {
-
-            $time = strtotime($v['Time']);
-            $delay = time() - $time;
-
-            if ($delay > 540) {
-                unset($arr[$bus['Brigade']][$k]);
-            }
-
-            if (count($arr[$bus['Brigade']]) > 4) {
-                $arr[$bus['Brigade']] = array_splice($arr[$bus['Brigade']], count($arr[$bus['Brigade']]) - 4, 4);
-            }
-        }
-
-        // if (count($arr[$bus['Brigade']]) > 2) {
-
-        //     $k = array_key_first($arr[$bus['Brigade']]);
-        //     unset($arr[$bus['Brigade']][$k]);
-        // }
-
     }
+
+
+    //clearing
+
+    for($group = 0; $group < count($arr); $group++){
+        for($bus = 0; $bus < count($arr[$group] ); $bus++){
+
+            $time = strtotime($arr[$group][$bus]['Time']);
+            $delay = time() - $time;
+            
+            if ($delay > 540) {
+                unset($arr[$group][$bus]);
+            }   
+
+            if (count($arr[$group]) > 4) {
+                $arr[$group] = array_splice($arr[$group], count($arr[$group]) - 4, 4);
+            }
+
+        }
+    }
+ 
 
     $arr = array_filter($arr);
 
